@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Certificate | Certificate Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .form-section {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding: 2rem 0;
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Certificate System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/generate">Generate Certificate</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/verify">Verify Certificate</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="bg-primary text-white text-center py-4 mb-4">
+        <div class="container">
+            <h1>Generate Certificate</h1>
+            <p class="lead">Create a new certificate with custom details</p>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Certificate Form -->
+    <div class="container">
+        <div class="form-section">
+            <form method="POST" action="/generate">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="certificate_type" class="form-label">Certificate Type</label>
+                        <input type="text" class="form-control" id="certificate_type" name="certificate_type" required placeholder="e.g. Certificate of Achievement">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="recipient_name" class="form-label">Recipient Name</label>
+                        <input type="text" class="form-control" id="recipient_name" name="recipient_name" required placeholder="e.g. John Smith">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="recipient_id" class="form-label">Recipient ID</label>
+                        <input type="text" class="form-control" id="recipient_id" name="recipient_id" required placeholder="e.g. ID12345">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="issuer_name" class="form-label">Issuer Name</label>
+                        <input type="text" class="form-control" id="issuer_name" name="issuer_name" required placeholder="e.g. ABC University">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="issuer_id" class="form-label">Issuer ID</label>
+                        <input type="text" class="form-control" id="issuer_id" name="issuer_id" required placeholder="e.g. ORG12345">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="issue_date" class="form-label">Issue Date</label>
+                        <input type="date" class="form-control" id="issue_date" name="issue_date" required>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="expiry_date" class="form-label">Expiry Date (Optional)</label>
+                        <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="blockchain_hash" class="form-label">Blockchain Hash (Optional)</label>
+                        <input type="text" class="form-control" id="blockchain_hash" name="blockchain_hash" placeholder="e.g. 0x1234...">
+                        <div class="form-text">Format: 0x followed by 32 hexadecimal characters</div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 col-md-6 mx-auto mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">Generate Certificate</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p>Certificate Management System &copy; 2023</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
