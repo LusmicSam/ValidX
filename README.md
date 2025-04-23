@@ -5,6 +5,7 @@ A robust blockchain-based certificate verification system with advanced OCR capa
 ## Features
 
 - **Blockchain Integration**: Secure certificate storage and verification using blockchain technology
+- **MobileNetV2** : Secure Visual Tampering detection on a hybrid MobileNetV2 Model 
 - **OCR Verification**: Advanced text extraction and validation using Tesseract OCR
 - **Template Matching**: Logo and signature verification using computer vision
 - **ML-based Validation**: Certificate validation using MobileNetV2
@@ -62,14 +63,12 @@ The system employs a multi-layer verification approach:
 - `templates/`: Web interface templates
 
 ## Contributors
+- **Shivam Panjolia**
 
 - **Priyatosh**
-  - Blockchain Integration
-  - Smart Contract Development
 
 - **Arpit Yadav**
-  - ML Model Development
-  - Template Matching
+  
 
 ## License
 
