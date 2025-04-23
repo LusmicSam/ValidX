@@ -25,7 +25,7 @@ def pdf_to_image(pdf_path):
     return img_array
 
 # Matching Logic
-def match_template(cert_path, template_path, threshold=0.4, scales=np.linspace(0.2, 2.5, 40), fixed_pos=None, fixed_scale=None):
+def match_template(cert_path, template_path, threshold=0.75, scales=np.linspace(0.5, 2.0, 30), fixed_pos=None, fixed_scale=None):
     if cert_path.lower().endswith(".pdf"):
         cert_img_color = pdf_to_image(cert_path)
     else:
@@ -42,14 +42,34 @@ def match_template(cert_path, template_path, threshold=0.4, scales=np.linspace(0
                                    (int(template_orig.shape[1] * scale * 0.9),
                                     int(template_orig.shape[0] * scale * 0.9)))
 
-    # Preprocess
-    cert_img_gray = cv2.GaussianBlur(cert_img_gray, (5, 5), 0)
+    # Enhanced preprocessing
+    # Deskew
+    coords = np.column_stack(np.where(cert_img_gray > 0))
+    angle = cv2.minAreaRect(coords)[-1]
+    if angle < -45:
+        angle = 90 + angle
+    (h, w) = cert_img_gray.shape[:2]
+    center = (w // 2, h // 2)
+    M = cv2.getRotationMatrix2D(center, angle, 1.0)
+    cert_img_gray = cv2.warpAffine(cert_img_gray, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+    
+    # Enhance contrast
+    cert_img_gray = cv2.equalizeHist(cert_img_gray)
+    
+    # Denoise and sharpen
+    cert_img_gray = cv2.fastNlMeansDenoising(cert_img_gray)
+    kernel = np.array([[0,-1,0], [-1,5,-1], [0,-1,0]])
+    cert_img_gray = cv2.filter2D(cert_img_gray, -1, kernel)
+    
+    # Adaptive thresholding with optimized parameters
     cert_img_gray = cv2.adaptiveThreshold(cert_img_gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                          cv2.THRESH_BINARY, 11, 2)
+                                          cv2.THRESH_BINARY, 15, 8)
 
-    template_orig = cv2.GaussianBlur(template_orig, (5, 5), 0)
+    # Enhanced template preprocessing
+    template_orig = cv2.fastNlMeansDenoising(template_orig)
+    template_orig = cv2.equalizeHist(template_orig)
     template_orig = cv2.adaptiveThreshold(template_orig, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                          cv2.THRESH_BINARY, 11, 2)
+                                          cv2.THRESH_BINARY, 15, 8)
 
     if fixed_scale:
         resized_w, resized_h = fixed_scale
@@ -57,7 +77,7 @@ def match_template(cert_path, template_path, threshold=0.4, scales=np.linspace(0
         if fixed_pos:
             return {
                 "match": True,
-                "confidence": 1.0,
+                "confidence": 0.85,
                 "position": fixed_pos,
                 "scale": 1.0,
                 "w": resized_w,
@@ -84,10 +104,12 @@ def match_template(cert_path, template_path, threshold=0.4, scales=np.linspace(0
         result = cv2.matchTemplate(cert_img_gray, resized_template, cv2.TM_CCOEFF_NORMED)
         _, max_val, _, max_loc = cv2.minMaxLoc(result)
 
-        if max_val > best_match["confidence"]:
+        # Apply a more stringent confidence calculation
+        adjusted_confidence = max_val * 0.85  # Scale down confidence to be more conservative
+        if adjusted_confidence > best_match["confidence"]:
             best_match.update({
                 "match": max_val >= threshold,
-                "confidence": float(max_val),
+                "confidence": float(adjusted_confidence),
                 "position": max_loc,
                 "scale": scale,
                 "w": resized_w,
@@ -133,9 +155,19 @@ def verify():
         logo_res, img = match_template(cert_path, logo_template, fixed_pos=LOGO_POS, fixed_scale=LOGO_SCALE)
         sign_res, _ = match_template(cert_path, sign_template, threshold=0.5)
 
+        # Calculate weighted verification score
+        logo_weight = 0.6  # Logo carries 60% of total weight
+        sign_weight = 0.4  # Signature carries 40% of total weight
+        
+        logo_score = logo_res['confidence'] if logo_res['match'] else 0
+        sign_score = sign_res['confidence'] if sign_res['confidence'] >= 0.5 else 0
+    
+        overall_score = (logo_score * logo_weight + sign_score * sign_weight) * 100
+
         results = {
             "Logo": logo_res,
             "Signature": sign_res,
+            "overall_verification_score": round(overall_score, 2)
         }
 
         output_img_path = os.path.join("output", f"matched_{uuid.uuid4().hex}.png")

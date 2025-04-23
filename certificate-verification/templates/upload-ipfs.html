@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload to IPFS | Certificate Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .upload-section {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-top: 2rem;
+            margin-bottom: 2rem;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding: 2rem 0;
+            background-color: #343a40;
+            color: white;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 3rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #0d6efd;
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+        .result-section {
+            display: none;
+            margin-top: 2rem;
+        }
+        .ipfs-link {
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">Certificate System</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/generate">Generate Certificate</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/verify">Verify Certificate</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/upload-ipfs">Upload to IPFS</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="upload-section">
+            <h2 class="text-center mb-4">Upload Certificate to IPFS</h2>
+            <form id="uploadForm" action="/upload-ipfs" method="post" enctype="multipart/form-data">
+                <div class="upload-area" id="dropZone">
+                    <div class="mb-3">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                        <h4>Drag and drop your certificate here</h4>
+                        <p class="text-muted">or click to select a file</p>
+                        <input type="file" id="certificateFile" name="file" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
+                    </div>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary" id="uploadButton">Upload to IPFS</button>
+                </div>
+            </form>
+
+            <div class="result-section" id="resultSection">
+                <div class="alert alert-success">
+                    <h4 class="alert-heading">Upload Successful!</h4>
+                    <p>Your certificate has been successfully uploaded to IPFS.</p>
+                    <hr>
+                    <p class="mb-0"><strong>IPFS Hash:</strong></p>
+                    <p class="ipfs-link" id="ipfsHash"></p>
+                    <p class="mb-0"><strong>Access URL:</strong></p>
+                    <p class="ipfs-link">
+                        <a href="" id="ipfsLink" target="_blank"></a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p>Certificate Management System &copy; 2023</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js" crossorigin="anonymous"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('dropZone');
+            const fileInput = document.getElementById('certificateFile');
+            const uploadForm = document.getElementById('uploadForm');
+            const resultSection = document.getElementById('resultSection');
+            const ipfsHashElement = document.getElementById('ipfsHash');
+            const ipfsLinkElement = document.getElementById('ipfsLink');
+
+            // Handle drag and drop events
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#0d6efd';
+                dropZone.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+            });
+
+            dropZone.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = '';
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#ccc';
+                dropZone.style.backgroundColor = '';
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files;
+                }
+            });
+
+            // Handle click to upload
+            dropZone.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // Handle form submission
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(uploadForm);
+
+                try {
+                    const response = await fetch('/upload-ipfs', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        ipfsHashElement.textContent = data.ipfs_hash;
+                        ipfsLinkElement.href = `https://gateway.pinata.cloud/ipfs/${data.ipfs_hash}`;
+                        ipfsLinkElement.textContent = `https://gateway.pinata.cloud/ipfs/${data.ipfs_hash}`;
+                        resultSection.style.display = 'block';
+                    } else {
+                        alert('Upload failed: ' + data.error);
+                    }
+                } catch (error) {
+                    alert('An error occurred during upload');
+                    console.error('Upload error:', error);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

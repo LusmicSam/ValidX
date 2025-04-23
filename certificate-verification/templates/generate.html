@@ -114,9 +114,9 @@
                         <input type="date" class="form-control" id="expiry_date" name="expiry_date">
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label for="blockchain_hash" class="form-label">Blockchain Hash (Optional)</label>
-                        <input type="text" class="form-control" id="blockchain_hash" name="blockchain_hash" placeholder="e.g. 0x1234...">
-                        <div class="form-text">Format: 0x followed by 32 hexadecimal characters</div>
+                        <label for="blockchain_hash" class="form-label">Blockchain Hash</label>
+                        <input type="text" class="form-control" id="blockchain_hash" name="blockchain_hash" readonly>
+                        <div class="form-text">This hash is automatically generated from the certificate metadata</div>
                     </div>
                 </div>
 
@@ -135,5 +135,35 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.querySelector('form');
+        const inputs = form.querySelectorAll('input');
+        const blockchainHashInput = document.getElementById('blockchain_hash');
+    
+        function generateHash() {
+            const metadata = {};
+            inputs.forEach(input => {
+                if (input.id !== 'blockchain_hash' && input.value) {
+                    metadata[input.id] = input.value;
+                }
+            });
+            const metadataString = JSON.stringify(metadata);
+            const hash = '0x' + CryptoJS.SHA256(metadataString).toString();
+            blockchainHashInput.value = hash;
+        }
+    
+        inputs.forEach(input => {
+            if (input.id !== 'blockchain_hash') {
+                input.addEventListener('change', generateHash);
+            }
+        });
+    
+        form.addEventListener('submit', function(e) {
+            generateHash();
+        });
+    });
+    </script>
 </body>
 </html>
